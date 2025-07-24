@@ -5,6 +5,7 @@ scikit-learn
 # Jupyter 报告与可视化
 jupyterlab
 matplotlib
+seaborn
 
 # 代码质量工具
 black
