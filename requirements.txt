@@ -1,0 +1,11 @@
+# 核心计算与数据科学库
+numpy
+scikit-learn
+
+# Jupyter 报告与可视化
+jupyterlab
+matplotlib
+
+# 代码质量工具
+black
+ruff
