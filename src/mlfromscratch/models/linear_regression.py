@@ -1,5 +1,6 @@
 import numpy as np
 from ..utils.base import BaseEstimator, RegressorMixin
+from ..utils.validation import validate_X_y, validate_array
 from typing import Dict, Optional
 
 class LinearRegression(BaseEstimator, RegressorMixin):
@@ -69,7 +70,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             the optimized values found by the optimizer.
         """
 
-        self._validate_inputs(X, y)
+        X, y = validate_X_y(X, y)
 
         m, n = X.shape
         self.weights_ = np.zeros((n, 1))
@@ -118,7 +119,7 @@ class LinearRegression(BaseEstimator, RegressorMixin):
         Note:
             The model must be fitted using the fit() method before making predictions.
         """
-        self._validate_X(X)
+        X = validate_array(X)
 
         if self.weights_ is None or self.bias_ is None:
             raise ValueError("Model has not been fitted yet. Call fit() before predict().")
@@ -127,90 +128,6 @@ class LinearRegression(BaseEstimator, RegressorMixin):
             raise ValueError(f"Number of features in X ({X.shape[1]}) does not "
                              f"match the number of features used during training ({self.weights_.shape[0]}).")
         return X.dot(self.weights_) + self.bias_
-
-    @staticmethod
-    def _validate_inputs(X: np.ndarray, y: np.ndarray) -> None:
-        """
-        Validate input shapes for fit and predict methods.
-
-        This method checks if the input features X and target values y have compatible
-        shapes. It raises ValueError if the shapes do not match the expected dimensions.
-
-        Args:
-            X (np.ndarray): Input features matrix of shape (m, n).
-            y (np.ndarray): Target values vector of shape (m, 1).
-
-        Raises:
-            ValueError: If the shapes of X and y are incompatible.
-        """
-        if not isinstance(X, np.ndarray):
-            raise TypeError(f"Expected X to be a numpy array, got type: {type(X)}")
-        if not isinstance(y, np.ndarray):
-            raise TypeError(f"Expected y to be a numpy array, got type: {type(y)}")
-
-        if X.ndim != 2:
-            raise ValueError(f"Expected X to be a 2D array, got shape: {X.shape}")
-        if y.ndim not in [1, 2]:
-            raise ValueError(f"Expected y to be a 1D or 2D array, got shape: {y.shape}")
-
-        # Check for empty arrays
-        if X.size == 0:
-            raise ValueError("X cannot be an empty array")
-        if y.size == 0:
-            raise ValueError("y cannot be an empty array")
-
-        # Check for NaN values
-        if np.isnan(X).any():
-            raise ValueError("X contains NaN values")
-        if np.isnan(y).any():
-            raise ValueError("y contains NaN values")
-
-        # Check for infinite values
-        if np.isinf(X).any():
-            raise ValueError("X contains infinite values")
-        if np.isinf(y).any():
-            raise ValueError("y contains infinite values")
-
-        m, n = X.shape # m = n_samples, n = n_features
-
-        if y.ndim == 2:
-            if y.shape[1] != 1:
-                raise ValueError(f"Expected y to be a column vector, got shape: {y.shape}")
-        if m != y.shape[0]:
-            raise ValueError(f"Number of samples in X and y must match: {m} != {y.shape[0]}")
-
-    @staticmethod
-    def _validate_X(X: np.ndarray) -> None:
-        """
-        Validate input features X for predict method.
-
-        This method checks if the input features X have the correct number of features
-        that match the model's trained weights. It raises ValueError if the shape is
-        incompatible.
-
-        Args:
-            X (np.ndarray): Input features matrix of shape (m, n).
-
-        Raises:
-            ValueError: If the number of features in X does not match the trained model.
-        """
-        if not isinstance(X, np.ndarray):
-            raise TypeError(f"Expected X to be a numpy array, got type: {type(X)}")
-
-        if X.ndim != 2:
-            raise ValueError(f"Expected X to be a 2D array, got shape: {X.shape}")
-
-        # Check for empty arrays
-        if X.size == 0:
-            raise ValueError("X cannot be an empty array")
-
-        # Check for NaN values
-        if np.isnan(X).any():
-            raise ValueError("X contains NaN values")
-
-        # Check for infinite values
-        if np.isinf(X).any():
-            raise ValueError("X contains infinite values")
 
     @property
     def coef_(self) -> np.ndarray:
