@@ -91,18 +91,19 @@ class BaseEstimator(ABC):
         return self
 
     @abstractmethod
-    def fit(self, X : np.ndarray, y : np.ndarray) -> 'BaseEstimator':
+    def fit(self, X: np.ndarray, y: np.ndarray, **fit_params) -> 'BaseEstimator':
         """
         Fit the model to the training data.
         :param X: Training data of shape (n_samples, n_features)
         :param y: Target values of shape (n_samples,), optional
+        :param fit_params: Additional parameters to pass to the fitting process
         :return: Self (fitted estimator)
         """
 
         raise NotImplementedError("BaseEstimator.fit() is not implemented. ")
 
     @abstractmethod
-    def predict(self, X : np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict using the fitted model.
         :param X: Input data of shape (n_samples, n_features)
@@ -111,14 +112,15 @@ class BaseEstimator(ABC):
 
         raise NotImplementedError("BaseEstimator.predict() is not implemented. ")
 
-    def fit_predict(self, X : np.ndarray, y : np.ndarray) -> np.ndarray:
+    def fit_predict(self, X: np.ndarray, y: np.ndarray, **fit_params) -> np.ndarray:
         """
         Fit the model and then predict using the fitted model.
         :param X: Training data of shape (n_samples, n_features)
         :param y: Target values of shape (n_samples,), optional
+        :param fit_params: Additional parameters to pass to the fitting process
         :return: Predictions of shape (n_samples,)
         """
-        return self.fit(X, y).predict(X)
+        return self.fit(X, y, **fit_params).predict(X)
 
     def __repr__(self):
         """
@@ -130,7 +132,8 @@ class BaseEstimator(ABC):
         params_str = ', '.join(f"{key}={value!r}" for key, value in self.get_params().items())
         return f"{class_name}({params_str})"
 
-def clone(estimator : BaseEstimator) -> BaseEstimator:
+
+def clone(estimator: BaseEstimator) -> BaseEstimator:
     """
     Clone an estimator.
     :param estimator: Estimator to clone
@@ -150,35 +153,62 @@ def clone(estimator : BaseEstimator) -> BaseEstimator:
 
     return new_estimator
 
-class ClassifierMixin:
+
+class ClassifierMixin(BaseEstimator, ABC):
     """
     Mixin class for classifiers.
     Provides methods for classification metrics.
     """
 
-    def score(self, X : np.ndarray, y : np.ndarray) -> float:
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Return the accuracy of the classifier on the given data and labels.
         :param X: Input data of shape (n_samples, n_features)
         :param y: True labels of shape (n_samples,)
         :return: Accuracy score as a float
         """
-        y_pred = self.predict(X)  # type: ignore
-        return accuracy_score(y_true = y, y_pred = y_pred)
+        y_pred = self.predict(X)
+        return accuracy_score(y_true=y, y_pred=y_pred)
 
 
-class RegressorMixin:
+class RegressorMixin(BaseEstimator, ABC):
     """
     Mixin class for regressors.
     Provides methods for regression metrics.
     """
 
-    def score(self, X : np.ndarray, y : np.ndarray) -> float:
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Return the R^2 score of the regressor on the given data and labels.
         :param X: Input data of shape (n_samples, n_features)
         :param y: True labels of shape (n_samples,)
         :return: R^2 score as a float
         """
-        y_pred = self.predict(X) # type: ignore
-        return r2_score(y_true = y, y_pred = y_pred)
+        y_pred = self.predict(X)
+        return r2_score(y_true=y, y_pred=y_pred)
+
+
+class TransformerMixin(BaseEstimator, ABC):
+    """
+    Mixin class for transformers.
+    Provides methods for transforming data.
+    """
+
+    @abstractmethod
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """
+        Transform the input data.
+        :param X: Input data of shape (n_samples, n_features)
+        :return: Transformed data of shape (n_samples, n_features_transformed)
+        """
+        raise NotImplementedError("TransformerMixin.transform() is not implemented. ")
+
+    def fit_transform(self, X: np.ndarray, y: np.ndarray = None, **fit_params) -> np.ndarray:
+        """
+        Fit the transformer to the data and then transform it.
+        :param X: Input data of shape (n_samples, n_features)
+        :param y: Target values, optional
+        :param fit_params: Additional parameters to pass to the fitting process
+        :return: Transformed data of shape (n_samples, n_features_transformed)
+        """
+        return self.fit(X, y, **fit_params).transform(X)
