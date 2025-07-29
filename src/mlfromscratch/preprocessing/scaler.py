@@ -1,3 +1,4 @@
+# This line is used to mark the creation of this file (the body is accidentally committed with other contents).
 import numpy as np
 from typing import Optional
 from ..utils.base import BaseEstimator, TransformerMixin
@@ -48,7 +49,7 @@ class StandardScaler(BaseEstimator, TransformerMixin):
         :return: Standardized data of shape (n_samples, n_features)
         """
         if self.mean_ is None or self.scale_ is None:
-            raise RuntimeError("You must fit the scaler before transforming data.")
+            raise ValueError("You must fit the scaler before transforming data.")
 
         return (X - self.mean_) / self.scale_
 
