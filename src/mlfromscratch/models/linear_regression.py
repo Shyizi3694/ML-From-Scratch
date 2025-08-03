@@ -4,7 +4,63 @@ from ..utils.validation import validate_X_y, validate_array
 from typing import Dict, Optional
 
 class LinearRegression(BaseEstimator, RegressorMixin):
+    """
+    Ordinary Least Squares Linear Regression using customizable optimizers.
+
+    LinearRegression fits a linear model with coefficients W = (w1, ..., wp) to minimize
+    the residual sum of squares between the observed targets in the dataset, and the
+    targets predicted by the linear approximation. The model assumes a linear relationship
+    between input features and target values following the equation: y = XW + b.
+
+    This implementation allows for different optimization algorithms to be used for
+    parameter estimation, providing flexibility in the training process. The model
+    uses Mean Squared Error as the loss function for optimization.
+
+    Parameters
+    ----------
+    optimizer : Optimizer
+        The optimization algorithm to use for parameter estimation. Must implement
+        an optimize method that takes gradient functions and returns optimized parameters.
+
+    Attributes
+    ----------
+    weights_ : np.ndarray of shape (n_features, 1) or None
+        Estimated coefficients for the linear regression problem. Available after
+        fitting the model.
+    bias_ : float or None
+        Independent term (intercept) in the linear model. Available after fitting.
+    coef_ : np.ndarray of shape (n_features,)
+        Estimated coefficients for the linear regression problem (flattened weights).
+        Read-only property, available after fitting.
+    intercept_ : float
+        Independent term (intercept) in the linear model. Alias for bias_.
+        Read-only property, available after fitting.
+
+    Notes
+    -----
+    The linear regression model follows the mathematical formulation:
+    y = X @ W + b + ε
+    where ε represents the error term with zero mean.
+
+    The optimization minimizes the Mean Squared Error:
+    MSE = (1/2m) * ||y - (XW + b)||²
+    """
+
+    # Annotations for properties
+    coef_: np.ndarray
+    intercept_: float
+
     def __init__(self, optimizer):
+        """
+        Initialize the LinearRegression model with a specified optimizer.
+
+        Parameters
+        ----------
+        optimizer : Optimizer
+            The optimization algorithm instance to use for parameter estimation.
+            Must provide an optimize method compatible with the gradient-based
+            optimization interface.
+        """
         self.optimizer = optimizer
         self.weights_: Optional[np.ndarray] = None
         self.bias_: Optional[float] = None
@@ -12,27 +68,39 @@ class LinearRegression(BaseEstimator, RegressorMixin):
     @staticmethod
     def _calculate_gradient(X: np.ndarray, y: np.ndarray, params: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
-        Calculate gradients for linear regression using Mean Squared Error loss.
+        Compute gradients of Mean Squared Error loss with respect to model parameters.
 
-        This method computes the partial derivatives of the MSE loss function with respect
-        to the weights and bias parameters. The gradients are calculated using the formulas:
-        - dW = (1/m) * X.T @ (y_pred - y)
-        - db = (1/m) * sum(y_pred - y)
+        This method calculates the partial derivatives of the MSE loss function with
+        respect to weights and bias using analytical derivatives. The gradients are
+        essential for gradient-based optimization algorithms.
 
-        Where y_pred = X @ W + b
+        The MSE loss function is: L = (1/2m) * ||y - (XW + b)||²
+        The computed gradients are:
+        - ∂L/∂W = (1/m) * X^T @ (XW + b - y)
+        - ∂L/∂b = (1/m) * Σ(XW + b - y)
 
-        Args:
-            X (np.ndarray): Input features matrix of shape (m, n) where m is the number
-                           of samples and n is the number of features.
-            y (np.ndarray): Target values vector of shape (m,1).
-            params (Dict[str, np.ndarray]): Dictionary containing current parameters:
-                - 'weights': Weight vector of shape (n,1)
-                - 'bias': Bias scalar value
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Input feature matrix containing training samples.
+        y : np.ndarray of shape (n_samples, 1)
+            Target values vector for training samples.
+        params : Dict[str, np.ndarray]
+            Current model parameters containing:
+            - 'weights': Weight matrix of shape (n_features, 1)
+            - 'bias': Bias term as scalar in array form
 
-        Returns:
-            Dict[str, np.ndarray]: Dictionary containing computed gradients:
-                - 'weights': Gradient with respect to weights, shape (n,1)
-                - 'bias': Gradient with respect to bias, scalar
+        Returns
+        -------
+        Dict[str, np.ndarray]
+            Dictionary containing computed gradients:
+            - 'weights': Gradient w.r.t. weights, shape (n_features, 1)
+            - 'bias': Gradient w.r.t. bias, scalar in array form
+
+        Notes
+        -----
+        The gradient computation assumes the linear model y_pred = X @ W + b
+        and uses vectorized operations for computational efficiency.
         """
         params_weights = params['weights']
         params_bias = params['bias']
@@ -44,30 +112,46 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
         return {'weights': dw, 'bias': np.array(db)}
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> 'LinearRegression':
+    def fit(self, X: np.ndarray, y: np.ndarray, **fit_params) -> 'LinearRegression':
         """
-        Fit the linear regression model to the training data using the specified optimizer.
+        Fit the linear regression model to training data using the configured optimizer.
 
-        This method trains the linear regression model by finding optimal weights and bias
-        that minimize the Mean Squared Error between predictions and actual target values.
-        The optimization process is handled by the optimizer passed during initialization.
+        This method estimates optimal model parameters (weights and bias) that minimize
+        the Mean Squared Error between predictions and actual target values. The
+        optimization process uses the gradient-based optimizer provided during
+        model initialization.
 
-        The linear regression model follows the equation: y = X @ W + b
-        where W represents weights and b represents bias.
+        The fitting process involves:
+        1. Data validation and preprocessing
+        2. Parameter initialization (weights to zeros, bias to zero)
+        3. Iterative optimization using computed gradients
+        4. Storage of final optimized parameters
 
-        Args:
-            X (np.ndarray): Training input features matrix of shape (m, n) where m is the
-                           number of training samples and n is the number of features.
-            y (np.ndarray): Training target values vector of shape (m,1) containing the
-                           ground truth values to be predicted.
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Training input feature matrix where each row represents a sample
+            and each column represents a feature.
+        y : np.ndarray of shape (n_samples,) or (n_samples, 1)
+            Training target values. Will be reshaped to column vector internally.
+        **fit_params : dict
+            Additional parameters to pass to the optimizer's optimize method.
+            Specific parameters depend on the optimizer implementation.
 
-        Returns:
-            LinearRegression: Returns self to enable method chaining. The fitted model
-                             with optimized weights and bias parameters.
+        Returns
+        -------
+        self : LinearRegression
+            Returns the fitted estimator instance to enable method chaining.
 
-        Note:
-            After fitting, the model's weights and bias attributes will be updated with
-            the optimized values found by the optimizer.
+        Raises
+        ------
+        ValueError
+            If input arrays have incompatible shapes or contain invalid values.
+
+        Notes
+        -----
+        After successful fitting, the model's weights_ and bias_ attributes
+        will contain the optimized parameters ready for making predictions.
         """
 
         X, y = validate_X_y(X, y)
@@ -98,26 +182,35 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
-        Make predictions using the fitted linear regression model.
+        Generate predictions using the fitted linear regression model.
 
-        This method applies the learned linear transformation to input features to generate
-        predictions. The prediction follows the linear equation: y_pred = X @ W + b
-        where W are the learned weights and b is the learned bias.
+        This method applies the learned linear transformation to input features
+        to produce predictions. The prediction computation follows the linear
+        equation: y_pred = X @ W + b, where W and b are the learned parameters.
 
-        Args:
-            X (np.ndarray): Input features matrix of shape (m, n) where m is the number
-                           of samples to predict and n is the number of features. The
-                           number of features must match the number used during training.
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            Input feature matrix for which to generate predictions. The number
+            of features must match the number used during model training.
 
-        Returns:
-            np.ndarray: Predicted values vector of shape (m,1) containing the linear
-                       regression predictions for each input sample.
+        Returns
+        -------
+        np.ndarray of shape (n_samples, 1)
+            Predicted target values for the input samples. Each row corresponds
+            to the prediction for the corresponding input sample.
 
-        Raises:
-            AttributeError: If the model has not been fitted yet (weights or bias is None).
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted yet, or if the number of features
+            in X does not match the number used during training.
 
-        Note:
-            The model must be fitted using the fit() method before making predictions.
+        Notes
+        -----
+        The model must be successfully fitted using the fit() method before
+        predictions can be made. The prediction is a linear combination of
+        input features with learned weights plus the learned bias term.
         """
         X = validate_array(X)
 
@@ -131,12 +224,40 @@ class LinearRegression(BaseEstimator, RegressorMixin):
 
     @property
     def coef_(self) -> np.ndarray:
+        """
+        Get the fitted coefficients (weights) of the linear model.
+
+        Returns
+        -------
+        np.ndarray of shape (n_features,)
+            The estimated coefficients for each input feature in flattened form.
+            These represent the linear relationship between each feature and the target.
+
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted yet.
+        """
         if self.weights_ is None:
             raise ValueError("Model has not been fitted yet. Call fit() before accessing coef_.")
         return self.weights_.flatten()
 
     @property
     def intercept_(self) -> float:
+        """
+        Get the fitted intercept (bias) of the linear model.
+
+        Returns
+        -------
+        float
+            The estimated intercept term, representing the model's prediction
+            when all features are zero.
+
+        Raises
+        ------
+        ValueError
+            If the model has not been fitted yet.
+        """
         if self.bias_ is None:
             raise ValueError("Model has not been fitted yet. Call fit() before accessing intercept_.")
         return self.bias_
