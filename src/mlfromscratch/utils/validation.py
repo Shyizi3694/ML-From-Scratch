@@ -68,7 +68,7 @@ def validate_array(X: np.ndarray, ensure_2d: bool = True,
             raise ValueError("X contains infinite values")
     return X
 
-def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
     """
     Validate input features and target arrays for machine learning tasks.
 
@@ -106,6 +106,10 @@ def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         - Number of samples in X and y don't match
     """
     X = validate_array(X)
+
+    if y is None:
+        return X, None
+
     y = validate_array(y, ensure_2d=False)
 
     if y.ndim not in [1, 2]:
