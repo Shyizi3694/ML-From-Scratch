@@ -3,7 +3,7 @@ from ..utils.base import BaseEstimator, TransformerMixin
 from ..utils.validation import validate_array
 import warnings
 
-class OneHotEncoder(BaseEstimator, TransformerMixin):
+class OneHotEncoder(TransformerMixin, BaseEstimator):
     """
     One-hot encoder for transforming categorical features into binary vectors.
     
@@ -146,3 +146,8 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
             result.append(col_encoded)
                 
         return np.hstack(result)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+
+        raise NotImplementedError("OneHotEncoder is a transformer, not a predictor. "
+                                  "Use transform() method to encode data.")

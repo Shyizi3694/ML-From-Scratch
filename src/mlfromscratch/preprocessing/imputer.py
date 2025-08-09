@@ -3,7 +3,7 @@ from ..utils.base import BaseEstimator, TransformerMixin
 from ..utils.validation import validate_array
 import warnings
 
-class SimpleImputer(BaseEstimator, TransformerMixin):
+class SimpleImputer(TransformerMixin, BaseEstimator):
     """
     Univariate imputer for completing missing values with simple strategies.
     
@@ -39,6 +39,11 @@ class SimpleImputer(BaseEstimator, TransformerMixin):
     For columns containing only NaN values, a default value of 0.0 is used when
     applying 'most_frequent' strategy, and a UserWarning is issued.
     """
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        raise NotImplementedError(
+            "SimpleImputer is a transformer, not a predictor. "
+            "Use transform() method to impute missing values.")
 
     def __init__(self, strategy: str = 'mean'):
         """

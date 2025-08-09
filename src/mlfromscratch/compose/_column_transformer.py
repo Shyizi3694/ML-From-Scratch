@@ -3,7 +3,7 @@ from ..utils.base import BaseEstimator, TransformerMixin, clone
 from ..utils.validation import validate_array, validate_X_y
 import warnings
 
-class ColumnTransformer(BaseEstimator, TransformerMixin):
+class ColumnTransformer(TransformerMixin, BaseEstimator):
     """
     Applies different transformers to different columns of a dataset.
 
@@ -236,3 +236,8 @@ class ColumnTransformer(BaseEstimator, TransformerMixin):
                 transformed_parts.append(remaining_X)
 
         return np.hstack(transformed_parts) if transformed_parts else np.array([]).reshape(X.shape[0], 0)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+
+        raise NotImplementedError("ColumnTransformer is a transformer, not a predictor. "
+                                  "Use transform() method to transform data.")

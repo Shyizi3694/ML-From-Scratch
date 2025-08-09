@@ -3,7 +3,7 @@ from ..utils.base import BaseEstimator, RegressorMixin
 from ..utils.validation import validate_X_y, validate_array
 from typing import Dict, Optional
 
-class LinearRegression(BaseEstimator, RegressorMixin):
+class LinearRegression(RegressorMixin, BaseEstimator):
     """
     Ordinary Least Squares Linear Regression using customizable optimizers.
 

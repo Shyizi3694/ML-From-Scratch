@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional
 from ..utils.base import BaseEstimator, TransformerMixin
 
-class StandardScaler(BaseEstimator, TransformerMixin):
+class StandardScaler(TransformerMixin, BaseEstimator):
     """
     StandardScaler standardizes features by removing the mean and scaling to unit variance.
     It is useful for algorithms that assume data is centered around zero and has unit variance.
@@ -52,6 +52,13 @@ class StandardScaler(BaseEstimator, TransformerMixin):
             raise ValueError("You must fit the scaler before transforming data.")
 
         return (X - self.mean_) / self.scale_
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+
+        raise NotImplementedError(
+            "StandardScaler is a transformer, not a predictor. "
+            "Use transform() method to standardize data."
+        )
 
     def inverse_transform(self, X: np.ndarray) -> np.ndarray:
         """
