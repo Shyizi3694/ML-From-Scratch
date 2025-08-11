@@ -123,7 +123,7 @@ class Pipeline(BaseEstimator):
         ValueError
             If the pipeline contains invalid fit parameters.
         """
-        X, y = validate_X_y(X, y)
+        X, y = validate_X_y(X, y, X_allow_nan=True, X_allow_inf=True)
         X_transformed = X.copy()
 
         sorted_fit_params = self._fit_params_sort(**fit_params)
@@ -170,7 +170,7 @@ class Pipeline(BaseEstimator):
         if not self._fitted:
             raise ValueError("Pipeline is not fitted yet. Call fit() before predict().")
 
-        X = validate_array(X)
+        X = validate_array(X, allow_nan=True, allow_inf=True)
         X_transformed = X.copy()
 
         for (_, estimator) in self.steps[:-1]:

@@ -154,7 +154,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         will contain the optimized parameters ready for making predictions.
         """
 
-        X, y = validate_X_y(X, y)
+        X, y = validate_X_y(X, y, dtype = np.float64)
 
         m, n = X.shape
         self.weights_ = np.zeros((n, 1))
@@ -212,7 +212,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         predictions can be made. The prediction is a linear combination of
         input features with learned weights plus the learned bias term.
         """
-        X = validate_array(X)
+        X = validate_array(X, dtype = np.float64)
 
         if self.weights_ is None or self.bias_ is None:
             raise ValueError("Model has not been fitted yet. Call fit() before predict().")

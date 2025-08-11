@@ -2,6 +2,7 @@
 import numpy as np
 from typing import Optional
 from ..utils.base import BaseEstimator, TransformerMixin
+from ..utils.validation import validate_array
 
 class StandardScaler(TransformerMixin, BaseEstimator):
     """
@@ -33,6 +34,7 @@ class StandardScaler(TransformerMixin, BaseEstimator):
         :param _fit_params: Additional parameters (not used)
         :return: self
         """
+        X = validate_array(X, dtype = np.float64)
 
         self.mean_ = np.mean(X, axis=0)
         self.scale_ = np.std(X, axis=0)
@@ -48,6 +50,8 @@ class StandardScaler(TransformerMixin, BaseEstimator):
         :param X: Input data of shape (n_samples, n_features)
         :return: Standardized data of shape (n_samples, n_features)
         """
+        X = validate_array(X, dtype = np.float64)
+
         if self.mean_ is None or self.scale_ is None:
             raise ValueError("You must fit the scaler before transforming data.")
 

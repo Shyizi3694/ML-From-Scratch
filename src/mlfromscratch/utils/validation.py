@@ -1,7 +1,7 @@
 import numpy as np
 
 def validate_array(X: np.ndarray, ensure_2d: bool = True,
-                    allow_nan: bool = False, allow_inf: bool = False) -> np.ndarray:
+                    allow_nan: bool = False, allow_inf: bool = False, dtype: type = None) -> np.ndarray:
     """
     Validate and convert input array to a standardized format.
 
@@ -23,6 +23,9 @@ def validate_array(X: np.ndarray, ensure_2d: bool = True,
     allow_inf : bool, default=False
         If False, raises ValueError when infinite values are detected in the array.
         If True, infinite values are allowed to pass through.
+    dtype : type, optional
+        If specified, converts the input array to this dtype. If None, the input
+        array is converted to a numpy array with the default dtype (usually float64).
 
     Returns
     -------
@@ -43,11 +46,15 @@ def validate_array(X: np.ndarray, ensure_2d: bool = True,
     """
     if not isinstance(X, np.ndarray):
         try:
-            X = np.asarray(X, dtype=np.float64)
+            if dtype is not None:
+                X = np.asarray(X, dtype=dtype)
+            else:
+                X = np.asarray(X)
         except (ValueError, TypeError):
             raise TypeError(f"Expected X to be a numpy array, got type: {type(X)}")
     else:
-        X = X.astype(np.float64, copy=False)
+        if dtype is not None:
+            X = X.astype(dtype, copy=False)
 
     if ensure_2d:
         if X.ndim != 2:
@@ -68,7 +75,8 @@ def validate_array(X: np.ndarray, ensure_2d: bool = True,
             raise ValueError("X contains infinite values")
     return X
 
-def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray | None]:
+def validate_X_y(X: np.ndarray, y: np.ndarray, X_ensure_2d: bool = True,
+                    X_allow_nan: bool = False, X_allow_inf: bool = False, X_dtype: type = None) -> tuple[np.ndarray, np.ndarray | None]:
     """
     Validate input features and target arrays for machine learning tasks.
 
@@ -84,6 +92,18 @@ def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray |
         represents a feature.
     y : array-like of shape (n_samples,) or (n_samples, 1)
         Target values corresponding to the samples in X. Can be 1D or 2D array.
+    X_ensure_2d : bool, default=True
+        If True, ensures the feature matrix X is 2-dimensional. Raises ValueError
+        if the input cannot be reshaped to 2D.
+    X_allow_nan : bool, default=False
+        If False, raises ValueError when NaN values are detected in the feature matrix X.
+        If True, NaN values are allowed to pass through.
+    X_allow_inf : bool, default=False
+        If False, raises ValueError when infinite values are detected in the feature matrix X.
+        If True, infinite values are allowed to pass through.
+    X_dtype : type, optional
+        If specified, converts the feature matrix X to this dtype. If None, the input
+        array is converted to a numpy array with the default dtype (usually float64).
 
     Returns
     -------
@@ -105,7 +125,8 @@ def validate_X_y(X: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray |
         - y is 2D but not a column vector (shape[1] != 1)
         - Number of samples in X and y don't match
     """
-    X = validate_array(X)
+    X = validate_array(X, ensure_2d=X_ensure_2d,
+                        allow_nan=X_allow_nan, allow_inf=X_allow_inf, dtype=X_dtype)
 
     if y is None:
         return X, None

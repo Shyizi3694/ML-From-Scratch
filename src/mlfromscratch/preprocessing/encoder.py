@@ -72,7 +72,7 @@ class OneHotEncoder(TransformerMixin, BaseEstimator):
 
         self.categories_ = []
 
-        X = validate_array(X)
+        X = validate_array(X, allow_nan = True, allow_inf=True)
 
         for col in range(X.shape[1]):
             if np.issubdtype(X[:, col].dtype, np.number):
@@ -120,7 +120,7 @@ class OneHotEncoder(TransformerMixin, BaseEstimator):
         if self.categories_ is None:
             raise ValueError("Encoder has not been fitted yet. Call 'fit' before 'transform'.")
 
-        X = validate_array(X)
+        X = validate_array(X, allow_nan=True, allow_inf=True)
 
         if X.shape[1] != len(self.categories_):
             raise ValueError(f"Input data has {X.shape[1]} features, "

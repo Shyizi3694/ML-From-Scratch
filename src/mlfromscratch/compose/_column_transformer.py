@@ -46,7 +46,7 @@ class ColumnTransformer(TransformerMixin, BaseEstimator):
         transformers, or if remainder is not 'drop' or 'passthrough'.
     """
 
-    def __init__(self, transformers: list[tuple[str, TransformerMixin, list[int]]], remainder = 'drop') -> None:
+    def __init__(self, transformers: list[tuple[str, TransformerMixin, list[int]]], remainder: str = 'drop') -> None:
         """
         Initialize the ColumnTransformer.
 
@@ -149,7 +149,7 @@ class ColumnTransformer(TransformerMixin, BaseEstimator):
             If fit_params keys don't follow the 'transformer_name__param_name'
             format.
         """
-        X, y = validate_X_y(X, y)
+        X, y = validate_X_y(X, y, X_allow_nan = True, X_allow_inf = True)
 
         for name, _, columns in self.transformers:
             if any(col < 0 or col >= X.shape[1] for col in columns):
@@ -212,7 +212,7 @@ class ColumnTransformer(TransformerMixin, BaseEstimator):
             If the input data has a different number of features than the data
             used during fitting.
         """
-        X = validate_array(X)
+        X = validate_array(X, allow_nan=True, allow_inf=True)
 
         if self.fitted_transformers_ is None:
             raise RuntimeError("ColumnTransformer must be fitted before transforming data")
