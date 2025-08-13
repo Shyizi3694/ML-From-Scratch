@@ -112,7 +112,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
 
         return {'weights': dw, 'bias': np.array(db)}
 
-    def fit(self, X: np.ndarray, y: np.ndarray, **fit_params) -> 'LinearRegression':
+    def fit(self, X: np.ndarray, y: np.ndarray, **_fit_params) -> 'LinearRegression':
         """
         Fit the linear regression model to training data using the configured optimizer.
 
@@ -134,9 +134,11 @@ class LinearRegression(RegressorMixin, BaseEstimator):
             and each column represents a feature.
         y : np.ndarray of shape (n_samples,) or (n_samples, 1)
             Training target values. Will be reshaped to column vector internally.
-        **fit_params : dict
-            Additional parameters to pass to the optimizer's optimize method.
-            Specific parameters depend on the optimizer implementation.
+        **_fit_params : dict, ignored
+            Additional fitting parameters. This parameter is ignored but included
+            for compatibility with scikit-learn's estimator interface. All
+            optimization parameters should be configured through the optimizer
+            instance passed during model initialization.
 
         Returns
         -------
@@ -152,6 +154,8 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         -----
         After successful fitting, the model's weights_ and bias_ attributes
         will contain the optimized parameters ready for making predictions.
+        The **_fit_params parameter is included for sklearn compatibility but
+        is not used in this implementation.
         """
 
         X, y = validate_X_y(X, y, dtype = np.float64)
