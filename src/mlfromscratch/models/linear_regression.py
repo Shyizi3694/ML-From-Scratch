@@ -158,25 +158,25 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         is not used in this implementation.
         """
 
-        X, y = validate_X_y(X, y, dtype = np.float64)
+        X, y = validate_X_y(X, y, X_dtype = np.float64)
 
         m, n = X.shape
         self.weights_ = np.zeros((n, 1))
-        self.bias_ = 0
+        self.bias_ = 0.0
 
         y_reshaped = y.reshape(-1, 1)
 
 
         initial_params = {
             'weights': self.weights_,
-            'bias': np.array(self.bias_)
+            'bias': np.array(self.bias_, dtype=np.float64)
         }
 
         final_params = self.optimizer.optimize(
             X=X,
             y=y_reshaped,
             initial_params=initial_params,
-            gradient_function=self._calculate_gradient
+            gradient_func=self._calculate_gradient
         )
 
         self.weights_ = final_params['weights']
