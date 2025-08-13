@@ -5,7 +5,7 @@ import numpy as np
 from ..utils.validation import validate_array, validate_X_y
 from collections import defaultdict
 
-class Pipeline(BaseEstimator):
+class Pipeline(TransformerMixin, BaseEstimator):
     """
     A sequential pipeline that chains multiple estimators together.
 
