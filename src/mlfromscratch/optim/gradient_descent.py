@@ -21,6 +21,7 @@ class GradientDescent:
         - params: Optimized parameters (dictionary).
         """
         params = initial_params.copy()
+        # diff = {}
         for _ in range(self.n_iterations):
             gradient = gradient_func(X, y, params)
 
@@ -31,6 +32,8 @@ class GradientDescent:
                 if param not in gradient:
                     raise ValueError(f"Gradient for parameter '{param}' is missing. Check the gradient function.")
 
+                # diff[param] = self.learning_rate * gradient[param]
                 params[param] -= self.learning_rate * gradient[param]
-
+        # print(diff)
+        # print(params)
         return params
