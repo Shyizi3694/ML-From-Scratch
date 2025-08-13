@@ -112,15 +112,16 @@ class BaseEstimator(ABC):
 
         raise NotImplementedError("BaseEstimator.predict() is not implemented. ")
 
-    def fit_predict(self, X: np.ndarray, y: np.ndarray, **fit_params) -> np.ndarray:
+    def fit_predict(self, X: np.ndarray, y: np.ndarray, X_test: np.ndarray, **fit_params) -> np.ndarray:
         """
         Fit the model and then predict using the fitted model.
+        :param X_test: Test data of shape (n_samples, n_features)
         :param X: Training data of shape (n_samples, n_features)
         :param y: Target values of shape (n_samples,), optional
         :param fit_params: Additional parameters to pass to the fitting process
         :return: Predictions of shape (n_samples,)
         """
-        return self.fit(X, y, **fit_params).predict(X)
+        return self.fit(X, y, **fit_params).predict(X_test)
 
     def __repr__(self):
         """
