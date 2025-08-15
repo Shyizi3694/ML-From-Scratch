@@ -45,6 +45,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
     named_steps: dict[str, BaseEstimator]
     final_estimator: BaseEstimator
 
+    # noinspection PyUnreachableCode
     def __init__(self, steps: list[tuple[str, BaseEstimator]]) -> None:
         """
         Initialize the Pipeline with a sequence of steps.
@@ -308,13 +309,17 @@ class Pipeline(TransformerMixin, BaseEstimator):
             the format 'step_name__param_name'.
         """
         params = {}
-        for name, estimator in self.named_steps.items():
-            if deep:
+
+        for key in self.__dict__:
+            if not key.startswith('_'):
+                params[key] = getattr(self, key)
+
+        if deep:
+            for name, estimator in self.named_steps.items():
                 step_params = estimator.get_params(deep=True)
-            else:
-                step_params = estimator.get_params(deep=False)
-            for param_name, param_value in step_params.items():
-                params[f"{name}__{param_name}"] = param_value
+                for param_name, param_value in step_params.items():
+                    params[f"{name}__{param_name}"] = param_value
+
         return params
 
     @override
@@ -344,20 +349,23 @@ class Pipeline(TransformerMixin, BaseEstimator):
             If referenced step names don't exist in the pipeline.
         """
         for key, value in params.items():
-            if "__" not in key:
-                raise KeyError(f"Parameter '{key}' does not contain '__' to separate step name and parameter name.")
+            if "__" not in key: # set params of self.steps itself
+                if not hasattr(self, key):
+                    raise KeyError(f"Parameter '{key}' is not a valid attribute of the Pipeline.")
+                setattr(self, key, value)
+            else:
+                step_name, param_name = key.split("__", 1)
 
-            step_name, param_name = key.split("__", 1)
+                if step_name not in [self_step_name for self_step_name, _ in self.steps]:
+                    raise ValueError(f"Step '{step_name}' not found in pipeline steps.")
 
-            if step_name not in [self_step_name for self_step_name, _ in self.steps]:
-                raise ValueError(f"Step '{step_name}' not found in pipeline steps.")
+                step_estimator = self.named_steps[step_name]
 
-            step_estimator = self.named_steps[step_name]
-
-            step_estimator.set_params(**{param_name: value})
+                step_estimator.set_params(**{param_name: value})
 
         return self
 
+    # noinspection PyUnreachableCode
     @classmethod
     def from_estimators(cls, *estimators: BaseEstimator, name_choice: str = "class_name") -> "Pipeline":
         """
@@ -397,7 +405,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
         steps = []
         for i, estimator in enumerate(estimators):
             if not isinstance(estimator, BaseEstimator):
-                raise TypeError(f"Expected {estimator.__class__.__name__} but got {type(estimator)}")
+                raise TypeError(f"Expected estimator to be BaseEstimator, but got {type(estimator)}")
 
             name = None
 
