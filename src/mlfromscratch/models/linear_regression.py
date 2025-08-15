@@ -224,7 +224,10 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         if X.shape[1] != self.weights_.shape[0]:
             raise ValueError(f"Number of features in X ({X.shape[1]}) does not "
                              f"match the number of features used during training ({self.weights_.shape[0]}).")
-        return X.dot(self.weights_) + self.bias_
+
+        prediction_2d = X.dot(self.weights_) + self.bias_
+
+        return prediction_2d.ravel()
 
     @property
     def coef_(self) -> np.ndarray:
