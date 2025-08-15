@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from ..metrics.classification import accuracy_score
 from ..metrics.regression import r2_score
+from collections.abc import Mapping, Sequence, Set
+from typing import Any
 
 
 class BaseEstimator(ABC):
@@ -134,6 +136,7 @@ class BaseEstimator(ABC):
         return f"{class_name}({params_str})"
 
 
+# noinspection PyUnreachableCode
 def clone(estimator: BaseEstimator) -> BaseEstimator:
     """
     Clone an estimator.
@@ -146,14 +149,41 @@ def clone(estimator: BaseEstimator) -> BaseEstimator:
     estimator_class = estimator.__class__
     params = estimator.get_params(deep=False)
 
+    cloned_params ={}
+
+    for key, value in params.items():
+        cloned_params[key] = _deep_clone_items(value)
+
     try:
-        new_estimator = estimator_class(**params)
+        new_estimator = estimator_class(**cloned_params)
     except TypeError:
         new_estimator = estimator_class()
-        new_estimator.set_params(**params)
+        new_estimator.set_params(**cloned_params)
 
     return new_estimator
 
+def _deep_clone_items(items: Any) -> Any:
+    """
+    Recursively clone items in a collection.
+    :param items: Collection of items to clone (can be a list, tuple, set, or dict)
+    :return: A new collection with cloned items
+    """
+    if isinstance(items, BaseEstimator):
+        return clone(items)
+
+    if isinstance(items, str):
+        return items
+
+    if isinstance(items, Sequence) or isinstance(items, Set):
+        return type(items)(_deep_clone_items(item) for item in items)
+
+    if isinstance(items, Mapping):
+        return type(items)({
+            _deep_clone_items(key) : _deep_clone_items(value)
+            for key, value in items.items()
+        })
+
+    return items
 
 class ClassifierMixin(BaseEstimator, ABC):
     """
