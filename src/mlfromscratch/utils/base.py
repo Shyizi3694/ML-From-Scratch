@@ -4,6 +4,7 @@ from ..metrics.classification import accuracy_score
 from ..metrics.regression import r2_score
 from collections.abc import Mapping, Sequence, Set
 from typing import Any
+import inspect
 
 
 class BaseEstimator(ABC):
@@ -20,15 +21,25 @@ class BaseEstimator(ABC):
         """
 
         params = {}
-        for key in self.__dict__:
-            if not key.startswith('_'):
-                params[key] = getattr(self, key)
+
+        sig = inspect.signature(self.__class__.__init__)
+
+        for param in sig.parameters.values():
+            if param.name == 'self' or param.kind ==  param.VAR_KEYWORD or param.kind == param.VAR_POSITIONAL:
+                continue
+
+            if hasattr(self, param.name):
+                params[param.name] = getattr(self, param.name)
+
         if deep:
+            nested_params = {}
             for key, value in params.items():
-                if isinstance(value, BaseEstimator):
-                    nest_params = value.get_params()
-                    for nest_key, nest_value in nest_params.items():
-                        params[f"{key}__{nest_key}"] = nest_value
+                if hasattr(value, 'get_params'):
+                    deep_items = value.get_params(deep=True)
+                    for deep_key, deep_value in deep_items.items():
+                        nested_params[f"{key}__{deep_key}"] = deep_value
+            params.update(nested_params)
+
         return params
 
     def set_params(self, **params) -> 'BaseEstimator':
@@ -59,20 +70,11 @@ class BaseEstimator(ABC):
         if not params:
             return
 
-        for key, value in params.items():
-            if '__' in key:
-                main_key, sub_key = key.split('__', 1)
-                if hasattr(self, main_key):
-                    nest_object = getattr(self, main_key)
-                    if isinstance(nest_object, BaseEstimator):
-                        nest_object._validate_params(**{sub_key: value})
-                    else:
-                        raise ValueError(f"Parameter {main_key} is not an estimator in {self.__class__.__name__}")
-                else:
-                    raise ValueError(f"Invalid parameter {main_key} for estimator {self.__class__.__name__}")
-            else:
-                if not hasattr(self, key):
-                    raise ValueError(f"Invalid parameter {key} for estimator {self.__class__.__name__}")
+        valid_params = self.get_params(deep=True)
+
+        for key in params:
+            if key not in valid_params:
+                raise ValueError(f"Invalid parameter {key!r} for estimator {self.__class__.__name__}.")
 
     def _internal_set_params(self, **params) -> 'BaseEstimator':
         """
