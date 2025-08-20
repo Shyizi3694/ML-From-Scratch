@@ -2,6 +2,7 @@ import numpy as np
 from ..utils.base import BaseEstimator, RegressorMixin
 from ..utils.validation import validate_X_y, validate_array
 from typing import Dict, Optional
+from ..optim.gradient_descent import GradientDescent
 
 class LinearRegression(RegressorMixin, BaseEstimator):
     """
@@ -50,7 +51,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
     coef_: np.ndarray
     intercept_: float
 
-    def __init__(self, optimizer):
+    def __init__(self, optimizer: GradientDescent):
         """
         Initialize the LinearRegression model with a specified optimizer.
 
@@ -112,6 +113,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
 
         return {'weights': dw, 'bias': np.array(db)}
 
+    # noinspection DuplicatedCode
     def fit(self, X: np.ndarray, y: np.ndarray, **_fit_params) -> 'LinearRegression':
         """
         Fit the linear regression model to training data using the configured optimizer.
@@ -219,7 +221,7 @@ class LinearRegression(RegressorMixin, BaseEstimator):
         X = validate_array(X, dtype = np.float64)
 
         if self.weights_ is None or self.bias_ is None:
-            raise ValueError("Model has not been fitted yet. Call fit() before predict().")
+            raise RuntimeError("Model has not been fitted yet. Call fit() before predict().")
 
         if X.shape[1] != self.weights_.shape[0]:
             raise ValueError(f"Number of features in X ({X.shape[1]}) does not "
