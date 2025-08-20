@@ -4,6 +4,7 @@ from ..utils.base import BaseEstimator, TransformerMixin
 import numpy as np
 from ..utils.validation import validate_array, validate_X_y
 from collections import defaultdict
+from ..utils.base import _deep_clone_items
 
 class Pipeline(TransformerMixin, BaseEstimator):
     """
@@ -91,6 +92,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
                 raise TypeError(f"Step {i} must be a TransformerMixin, got {type(estimator)}")
 
         self.steps = steps
+        self.fitted_steps = []
         self._fitted = False
 
 
@@ -124,17 +126,18 @@ class Pipeline(TransformerMixin, BaseEstimator):
         ValueError
             If the pipeline contains invalid fit parameters.
         """
-        X, y = validate_X_y(X, y, X_allow_nan=True, X_allow_inf=True)
+        X, y = validate_X_y(X=X, y=y, X_allow_nan=True, X_allow_inf=True)
         X_transformed = X.copy()
+        self.fitted_steps = _deep_clone_items(self.steps)
 
         sorted_fit_params = self._fit_params_sort(**fit_params)
 
-        for i, (name, estimator) in enumerate(self.steps):
+        for i, (name, estimator) in enumerate(self.fitted_steps):
             step_params = sorted_fit_params.get(name, {})
-            if i != len(self.steps) - 1:
+            if i != len(self.fitted_steps) - 1:
                 transformer: TransformerMixin = estimator # type: ignore
                 X_transformed = transformer.fit_transform(X_transformed, y, **step_params)
-            elif i == len(self.steps) - 1:
+            elif i == len(self.fitted_steps) - 1:
                 estimator.fit(X_transformed, y, **step_params)
 
         self._fitted = True
@@ -165,8 +168,8 @@ class Pipeline(TransformerMixin, BaseEstimator):
         ValueError
             If the pipeline hasn't been fitted yet.
         """
-        if not hasattr(self.steps[-1][1], "predict"):
-            raise AttributeError(f"The last step must have a 'predict' method, got {type(self.steps[-1][1])}")
+        if not hasattr(self.fitted_steps[-1][1], "predict"):
+            raise AttributeError(f"The last step must have a 'predict' method, got {type(self.fitted_steps[-1][1])}")
 
         if not self._fitted:
             raise ValueError("Pipeline is not fitted yet. Call fit() before predict().")
@@ -174,11 +177,11 @@ class Pipeline(TransformerMixin, BaseEstimator):
         X = validate_array(X, allow_nan=True, allow_inf=True)
         X_transformed = X.copy()
 
-        for (_, estimator) in self.steps[:-1]:
+        for (_, estimator) in self.fitted_steps[:-1]:
             transformer: TransformerMixin = estimator # type: ignore
             X_transformed = transformer.transform(X_transformed)
 
-        return self.steps[-1][1].predict(X_transformed)
+        return self.fitted_steps[-1][1].predict(X_transformed)
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
@@ -204,8 +207,8 @@ class Pipeline(TransformerMixin, BaseEstimator):
         ValueError
             If the pipeline hasn't been fitted yet.
         """
-        if not hasattr(self.steps[-1][1], "transform"):
-            raise AttributeError(f"The last step must have a 'transform' method, got {type(self.steps[-1][1])}")
+        if not hasattr(self.fitted_steps[-1][1], "transform"):
+            raise AttributeError(f"The last step must have a 'transform' method, got {type(self.fitted_steps[-1][1])}")
 
         if not self._fitted:
             raise ValueError("Pipeline is not fitted yet. Call fit() before transform().")
@@ -213,7 +216,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
         X = validate_array(X)
         X_transformed = X.copy()
 
-        for (_, estimator) in self.steps:
+        for (_, estimator) in self.fitted_steps:
             transformer: TransformerMixin = estimator # type: ignore
             X_transformed = transformer.transform(X_transformed)
 
@@ -247,7 +250,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
             If referenced step names don't exist in the pipeline.
         """
         sorted_params = defaultdict(dict)
-        step_names = {step[0] for step in self.steps}
+        step_names = {step[0] for step in self.fitted_steps}
 
         for key, value in fit_params.items():
             if "__" not in key:
@@ -273,7 +276,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
             Dictionary where keys are step names and values are the
             corresponding estimator instances.
         """
-        return {name: estimator for name, estimator in self.steps}
+        return {name: estimator for name, estimator in self.fitted_steps}
 
     @property
     def final_estimator(self) -> BaseEstimator:
@@ -285,7 +288,7 @@ class Pipeline(TransformerMixin, BaseEstimator):
         estimator : BaseEstimator
             The last estimator in the pipeline sequence.
         """
-        return self.steps[-1][1]
+        return self.fitted_steps[-1][1]
 
     @override
     def get_params(self, deep = True) -> dict[str, Any]:
@@ -349,14 +352,14 @@ class Pipeline(TransformerMixin, BaseEstimator):
             If referenced step names don't exist in the pipeline.
         """
         for key, value in params.items():
-            if "__" not in key: # set params of self.steps itself
+            if "__" not in key: # set params of self.fitted_steps itself
                 if not hasattr(self, key):
                     raise KeyError(f"Parameter '{key}' is not a valid attribute of the Pipeline.")
                 setattr(self, key, value)
             else:
                 step_name, param_name = key.split("__", 1)
 
-                if step_name not in [self_step_name for self_step_name, _ in self.steps]:
+                if step_name not in [self_step_name for self_step_name, _ in self.fitted_steps]:
                     raise ValueError(f"Step '{step_name}' not found in pipeline steps.")
 
                 step_estimator = self.named_steps[step_name]
