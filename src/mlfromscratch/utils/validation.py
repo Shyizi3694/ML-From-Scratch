@@ -1,5 +1,7 @@
 import numpy as np
 
+
+# noinspection PyUnreachableCode
 def validate_array(X: np.ndarray, ensure_2d: bool = True,
                     allow_nan: bool = False, allow_inf: bool = False, dtype: type = None) -> np.ndarray:
     """
